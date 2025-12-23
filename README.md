@@ -98,6 +98,9 @@ Debate_Gravity/
 
 *Note: Create a `screenshots` folder and add your images*
 
+[![Watch the video](https://img.youtube.com/vi/2ZBClBr4e0I/0.jpg)](https://youtu.be/2ZBClBr4e0I)
+
+
 ---
 
 ## 🔧 Configuration
@@ -200,3 +203,4 @@ Made with ❤️ for hackathons
 ---
 
 > *"The measure of intelligence is the ability to change."* — Albert Einstein
+
