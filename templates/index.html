@@ -1,0 +1,815 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DEBATE GRAVITY | AI Debate Arena</title>
+    <meta name="description" content="Challenge AI in intellectual debates. Debate Gravity uses advanced AI to argue the opposite of any position you take.">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600;700&family=JetBrains+Mono:wght@300;400&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        cyber: {
+                            dark: '#030712',
+                            panel: '#0B1221',
+                            neon: '#00F0FF',
+                            purple: '#BD00FF',
+                            alert: '#FF2A6D',
+                            green: '#00FF88',
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Rajdhani', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    },
+                    animation: {
+                        'pulse-glow': 'pulseGlow 2s ease-in-out infinite',
+                        'float': 'float 6s ease-in-out infinite',
+                        'typing': 'typing 0.5s steps(1) infinite',
+                    },
+                    keyframes: {
+                        pulseGlow: {
+                            '0%, 100%': { boxShadow: '0 0 10px #00F0FF', opacity: 1 },
+                            '50%': { boxShadow: '0 0 20px #00F0FF', opacity: 0.8 },
+                        },
+                        float: {
+                            '0%, 100%': { transform: 'translateY(0px)' },
+                            '50%': { transform: 'translateY(-20px)' },
+                        },
+                        typing: {
+                            '0%': { opacity: 1 },
+                            '50%': { opacity: 0 },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        /* THEME VARIABLES */
+        :root {
+            --bg-primary: #030712;
+            --bg-secondary: #0B1221;
+            --text-primary: #E5E7EB;
+            --text-secondary: #9CA3AF;
+            --accent-neon: #00F0FF;
+            --accent-purple: #BD00FF;
+        }
+
+        [data-theme="light"] {
+            --bg-primary: #F3F4F6;
+            --bg-secondary: #FFFFFF;
+            --text-primary: #1F2937;
+            --text-secondary: #6B7280;
+        }
+
+        /* SCIFI BACKGROUND */
+        .scifi-bg {
+            background-color: var(--bg-primary);
+            background-image: 
+                radial-gradient(circle at 50% 50%, rgba(189, 0, 255, 0.05) 0%, transparent 50%),
+                linear-gradient(rgba(0, 240, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 240, 255, 0.03) 1px, transparent 1px);
+            background-size: 100% 100%, 40px 40px, 40px 40px;
+            transition: background-color 0.3s ease;
+        }
+
+        [data-theme="light"] .scifi-bg {
+            background-image: 
+                radial-gradient(circle at 50% 50%, rgba(189, 0, 255, 0.03) 0%, transparent 50%),
+                linear-gradient(rgba(0, 240, 255, 0.05) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 240, 255, 0.05) 1px, transparent 1px);
+        }
+
+        .glass-hud {
+            background: rgba(11, 18, 33, 0.75);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(0, 240, 255, 0.15);
+            box-shadow: 0 0 30px rgba(0, 0, 0, 0.5);
+            transition: all 0.3s ease;
+        }
+
+        [data-theme="light"] .glass-hud {
+            background: rgba(255, 255, 255, 0.9);
+            border: 1px solid rgba(189, 0, 255, 0.2);
+        }
+
+        /* SCROLLBAR */
+        ::-webkit-scrollbar { width: 5px; }
+        ::-webkit-scrollbar-thumb { background: var(--accent-neon); border-radius: 5px; }
+        ::-webkit-scrollbar-track { background: var(--bg-primary); }
+
+        /* PARTICLES */
+        .particle {
+            position: fixed;
+            pointer-events: none;
+            border-radius: 50%;
+            animation: particleFloat linear infinite;
+            z-index: 1;
+        }
+
+        @keyframes particleFloat {
+            0% { transform: translateY(100vh) rotate(0deg); opacity: 0; }
+            10% { opacity: 1; }
+            90% { opacity: 1; }
+            100% { transform: translateY(-100vh) rotate(720deg); opacity: 0; }
+        }
+
+        /* TYPING INDICATOR */
+        .typing-cursor {
+            display: inline-block;
+            width: 2px;
+            height: 1em;
+            background: var(--accent-neon);
+            animation: typing 0.7s infinite;
+            vertical-align: text-bottom;
+        }
+
+        /* STATUS INDICATOR */
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(1.2); }
+        }
+
+        /* MOBILE SIDEBAR */
+        .sidebar-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.7);
+            z-index: 40;
+        }
+
+        .sidebar-overlay.active { display: block; }
+
+        @media (max-width: 768px) {
+            .mobile-sidebar {
+                position: fixed;
+                left: 0;
+                top: 0;
+                bottom: 0;
+                transform: translateX(-100%);
+                transition: transform 0.3s ease;
+                z-index: 50;
+            }
+            .mobile-sidebar.open { transform: translateX(0); }
+        }
+
+        /* HELP TOOLTIP */
+        .help-tooltip {
+            display: none;
+            position: absolute;
+            right: 0;
+            top: 100%;
+            background: var(--bg-secondary);
+            border: 1px solid rgba(0, 240, 255, 0.3);
+            padding: 1rem;
+            border-radius: 0.5rem;
+            z-index: 100;
+            min-width: 200px;
+        }
+
+        .help-btn:hover + .help-tooltip,
+        .help-tooltip:hover { display: block; }
+    </style>
+</head>
+<body class="scifi-bg text-gray-200 h-screen flex overflow-hidden font-sans selection:bg-cyber-neon selection:text-black" data-theme="dark">
+
+    <!-- PARTICLE CONTAINER -->
+    <div id="particles"></div>
+
+    <!-- SIDEBAR OVERLAY (Mobile) -->
+    <div class="sidebar-overlay" id="sidebar-overlay" onclick="toggleSidebar()"></div>
+
+    <!-- SIDEBAR -->
+    <aside id="sidebar" class="w-80 glass-hud border-r border-cyber-neon/20 flex flex-col mobile-sidebar md:flex z-50 relative">
+        <div class="p-6 border-b border-cyber-neon/10 relative overflow-hidden">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h1 class="text-3xl font-bold tracking-widest text-white">DEBATE<span class="text-cyber-neon">GRAVITY</span></h1>
+                    <p class="text-xs text-cyber-neon/60 font-mono mt-1 tracking-[0.3em]">SYSTEM ONLINE // V3.0</p>
+                </div>
+                <button onclick="toggleSidebar()" class="md:hidden text-cyber-neon p-2">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+        </div>
+
+        <div class="flex-1 p-6 space-y-8 overflow-y-auto">
+            
+            <!-- CONNECTION STATUS -->
+            <div class="flex items-center gap-2">
+                <div id="status-dot" class="status-dot bg-cyber-green"></div>
+                <span id="status-text" class="text-xs font-mono text-cyber-green">AI CONNECTED</span>
+            </div>
+
+            <!-- DEBATE COUNTER -->
+            <div class="bg-cyber-dark/50 border border-cyber-neon/20 p-4 rounded">
+                <h3 class="text-cyber-neon text-xs font-bold font-mono mb-2">TOTAL_DEBATES</h3>
+                <p class="text-5xl font-mono font-bold text-white tracking-tighter transition-all duration-300" id="debate-count">00</p>
+            </div>
+
+            <!-- MODE SELECTION -->
+            <div>
+                <h3 class="text-cyber-purple text-xs font-bold font-mono mb-3">NEURAL MODE SETTINGS</h3>
+                <div class="grid grid-cols-2 gap-2">
+                    <button id="btn-logical" onclick="setMode('logical')" class="mode-btn bg-transparent border border-gray-700 text-gray-500 hover:text-white text-xs py-2 px-3 rounded transition-all font-mono">
+                        🧠 LOGICAL
+                    </button>
+                    <button id="btn-aggressive" onclick="setMode('aggressive')" class="mode-btn bg-transparent border border-gray-700 text-gray-500 hover:text-white text-xs py-2 px-3 rounded transition-all font-mono">
+                        ⚡ AGGRESSIVE
+                    </button>
+                    <button id="btn-devil" onclick="setMode('devil')" class="mode-btn bg-transparent border border-gray-700 text-gray-500 hover:text-white text-xs py-2 px-3 rounded transition-all font-mono col-span-2">
+                        😈 DEVIL'S ADVOCATE
+                    </button>
+                </div>
+            </div>
+
+            <!-- ACTIONS -->
+            <div>
+                <h3 class="text-gray-500 text-xs font-bold font-mono mb-3">ACTIONS</h3>
+                <div class="space-y-2">
+                    <button onclick="clearChat()" class="w-full bg-transparent border border-gray-700 text-gray-500 hover:border-cyber-alert hover:text-cyber-alert text-xs py-2 px-3 rounded transition-all font-mono flex items-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                        CLEAR CHAT
+                    </button>
+                    <button onclick="toggleSound()" id="sound-btn" class="w-full bg-transparent border border-gray-700 text-gray-500 hover:border-cyber-neon hover:text-cyber-neon text-xs py-2 px-3 rounded transition-all font-mono flex items-center gap-2">
+                        <svg id="sound-icon" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"/></svg>
+                        <span id="sound-text">SOUND: ON</span>
+                    </button>
+                    <button onclick="getScore()" id="score-btn" class="w-full bg-gradient-to-r from-cyber-purple/20 to-cyber-neon/20 border border-cyber-purple text-cyber-purple hover:text-white text-xs py-2 px-3 rounded transition-all font-mono flex items-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+                        🏆 GET SCORE
+                    </button>
+                </div>
+            </div>
+
+            <!-- DEBATE SCORE PANEL -->
+            <div id="score-panel" class="hidden">
+                <h3 class="text-cyber-purple text-xs font-bold font-mono mb-3">YOUR SCORE</h3>
+                <div class="bg-cyber-dark/50 border border-cyber-purple/30 p-4 rounded space-y-3">
+                    <div class="text-center">
+                        <p id="total-score" class="text-4xl font-mono font-bold text-cyber-purple">--</p>
+                        <p class="text-[10px] text-gray-500 font-mono">/ 100</p>
+                    </div>
+                    <div class="space-y-2 text-xs font-mono">
+                        <div class="flex justify-between"><span class="text-gray-500">Logic</span><span id="score-logic" class="text-cyber-neon">--</span></div>
+                        <div class="flex justify-between"><span class="text-gray-500">Evidence</span><span id="score-evidence" class="text-cyber-neon">--</span></div>
+                        <div class="flex justify-between"><span class="text-gray-500">Persuasion</span><span id="score-persuasion" class="text-cyber-neon">--</span></div>
+                        <div class="flex justify-between"><span class="text-gray-500">Rebuttal</span><span id="score-rebuttal" class="text-cyber-neon">--</span></div>
+                    </div>
+                    <p id="score-feedback" class="text-[10px] text-gray-400 italic border-t border-gray-700 pt-2"></p>
+                </div>
+            </div>
+
+            <!-- KEYBOARD SHORTCUTS -->
+            <div>
+                <h3 class="text-gray-500 text-xs font-bold font-mono mb-3">SHORTCUTS</h3>
+                <div class="space-y-1 text-[10px] font-mono text-gray-600">
+                    <p><span class="text-cyber-neon">Enter</span> → Send message</p>
+                    <p><span class="text-cyber-neon">Ctrl+K</span> → Clear chat</p>
+                    <p><span class="text-cyber-neon">Ctrl+M</span> → Toggle mic</p>
+                    <p><span class="text-cyber-neon">Ctrl+/</span> → Toggle theme</p>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- MAIN CONTENT -->
+    <main class="flex-1 flex flex-col relative z-10">
+        <!-- HEADER -->
+        <header class="h-16 border-b border-cyber-neon/10 flex items-center justify-between px-6 bg-cyber-dark/80 backdrop-blur">
+            <div class="flex items-center gap-4">
+                <!-- Mobile Menu Button -->
+                <button onclick="toggleSidebar()" class="md:hidden text-cyber-neon p-2 -ml-2">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+                </button>
+                <div class="h-8 w-[2px] bg-cyber-neon hidden md:block"></div>
+                <h2 class="text-sm font-mono text-cyber-neon tracking-widest">MAIN_CONCOURSE</h2>
+            </div>
+            
+            <div class="flex items-center gap-4">
+                <!-- Theme Toggle -->
+                <button onclick="toggleTheme()" id="theme-btn" class="p-2 text-cyber-neon hover:text-white transition-colors" title="Toggle Theme (Ctrl+/)">
+                    <svg id="theme-icon-dark" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
+                    <svg id="theme-icon-light" class="w-5 h-5 hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" /></svg>
+                </button>
+                
+                <!-- Help Button -->
+                <div class="relative">
+                    <button class="help-btn p-2 text-gray-500 hover:text-cyber-neon transition-colors" title="Keyboard Shortcuts">
+                        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                    </button>
+                    <div class="help-tooltip text-xs">
+                        <p class="font-bold text-cyber-neon mb-2">Keyboard Shortcuts</p>
+                        <p><kbd class="bg-cyber-dark px-1 rounded">Enter</kbd> Send</p>
+                        <p><kbd class="bg-cyber-dark px-1 rounded">Ctrl+K</kbd> Clear</p>
+                        <p><kbd class="bg-cyber-dark px-1 rounded">Ctrl+M</kbd> Mic</p>
+                        <p><kbd class="bg-cyber-dark px-1 rounded">Ctrl+/</kbd> Theme</p>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- CHAT CONTAINER -->
+        <div id="chat-container" class="flex-1 overflow-y-auto p-6 space-y-6">
+            <div class="flex flex-col items-center justify-center h-full opacity-60 pointer-events-none" id="welcome-screen">
+                <div class="text-6xl mb-4 animate-float">⚖️</div>
+                <h1 class="mt-6 text-2xl font-bold tracking-widest text-white">SYSTEM READY</h1>
+                <p class="text-cyber-neon/70 font-mono text-sm mt-2">INITIALIZE PROTOCOL TO BEGIN</p>
+                <p class="text-gray-600 font-mono text-xs mt-4">Select a topic below or type your argument</p>
+            </div>
+        </div>
+
+        <!-- QUICK TOPICS -->
+        <div class="px-6 pb-2 flex gap-2 overflow-x-auto no-scrollbar">
+            <button onclick="setInput('Is AI dangerous to humanity?')" class="bg-cyber-dark border border-gray-700 text-gray-400 hover:border-cyber-neon hover:text-cyber-neon text-xs px-3 py-1 rounded-full transition-all whitespace-nowrap">⚠️ AI Danger</button>
+            <button onclick="setInput('Should Mars be colonized?')" class="bg-cyber-dark border border-gray-700 text-gray-400 hover:border-cyber-purple hover:text-cyber-purple text-xs px-3 py-1 rounded-full transition-all whitespace-nowrap">🚀 Mars Colony</button>
+            <button onclick="setInput('Is social media more harmful than helpful?')" class="bg-cyber-dark border border-gray-700 text-gray-400 hover:border-cyber-alert hover:text-cyber-alert text-xs px-3 py-1 rounded-full transition-all whitespace-nowrap">📱 Social Media</button>
+            <button onclick="setInput('Should universal basic income be implemented?')" class="bg-cyber-dark border border-gray-700 text-gray-400 hover:border-cyber-green hover:text-cyber-green text-xs px-3 py-1 rounded-full transition-all whitespace-nowrap">💰 UBI Policy</button>
+            <button onclick="setInput('Is climate change the biggest threat we face?')" class="bg-cyber-dark border border-gray-700 text-gray-400 hover:border-yellow-500 hover:text-yellow-500 text-xs px-3 py-1 rounded-full transition-all whitespace-nowrap">🌍 Climate Crisis</button>
+            <button onclick="setInput('Should education be completely free?')" class="bg-cyber-dark border border-gray-700 text-gray-400 hover:border-blue-500 hover:text-blue-500 text-xs px-3 py-1 rounded-full transition-all whitespace-nowrap">📚 Free Education</button>
+        </div>
+
+        <!-- INPUT AREA -->
+        <div class="p-6 pt-2">
+            <div class="max-w-4xl mx-auto relative group">
+                <div class="absolute -inset-0.5 bg-gradient-to-r from-cyber-neon to-cyber-purple rounded-lg blur opacity-30 group-focus-within:opacity-100 transition duration-500"></div>
+                <form id="chat-form" class="relative flex bg-cyber-dark rounded-lg border border-cyber-neon/30 p-2 items-center">
+                    
+                    <button type="button" id="mic-btn" class="p-3 text-cyber-neon hover:text-white transition-colors" title="Voice Input (Ctrl+M)">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" /></svg>
+                    </button>
+
+                    <input type="text" id="user-input" class="flex-1 bg-transparent text-white px-2 py-3 focus:outline-none placeholder-gray-600 font-mono text-sm" placeholder="TRANSMIT_ARGUMENT..." autocomplete="off">
+                    
+                    <button type="submit" class="bg-cyber-neon/10 hover:bg-cyber-neon text-cyber-neon hover:text-black border border-cyber-neon/50 px-6 py-2 rounded font-mono text-sm font-bold tracking-wider transition-all m-1">SEND</button>
+                </form>
+            </div>
+            <p id="mic-status" class="text-center text-[10px] text-cyber-neon mt-2 h-4 font-mono tracking-widest opacity-0">LISTENING...</p>
+        </div>
+    </main>
+
+    <!-- AUDIO ELEMENTS -->
+    <audio id="sound-send" preload="auto">
+        <source src="data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACAgICAgICAgICAgICAgICAgICAgICAgICA" type="audio/wav">
+    </audio>
+    <audio id="sound-receive" preload="auto">
+        <source src="data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACAgICAgICAgICAgICAgICAgICAgICAgICA" type="audio/wav">
+    </audio>
+
+    <script>
+        // === CORE ELEMENTS ===
+        const chatContainer = document.getElementById('chat-container');
+        const chatForm = document.getElementById('chat-form');
+        const userInput = document.getElementById('user-input');
+        const micBtn = document.getElementById('mic-btn');
+        const micStatus = document.getElementById('mic-status');
+        const debateCountEl = document.getElementById('debate-count');
+        const statusDot = document.getElementById('status-dot');
+        const statusText = document.getElementById('status-text');
+
+        // === STATE ===
+        let soundEnabled = localStorage.getItem('soundEnabled') !== 'false';
+        let currentTheme = localStorage.getItem('theme') || 'dark';
+        let conversationHistory = []; // Track all exchanges for context and scoring
+
+        // === INITIALIZATION ===
+        document.addEventListener('DOMContentLoaded', () => {
+            createParticles();
+            loadLocalStats();
+            updateModeUI(localStorage.getItem('debateMode') || 'logical');
+            applyTheme(currentTheme);
+            updateSoundUI();
+            checkConnection();
+        });
+
+        // === PARTICLE SYSTEM ===
+        function createParticles() {
+            const container = document.getElementById('particles');
+            const colors = ['#00F0FF', '#BD00FF', '#FF2A6D'];
+            
+            for (let i = 0; i < 30; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                const size = Math.random() * 4 + 2;
+                const color = colors[Math.floor(Math.random() * colors.length)];
+                
+                particle.style.cssText = `
+                    width: ${size}px;
+                    height: ${size}px;
+                    left: ${Math.random() * 100}%;
+                    background: ${color};
+                    box-shadow: 0 0 ${size * 2}px ${color};
+                    animation-duration: ${Math.random() * 20 + 15}s;
+                    animation-delay: ${Math.random() * 10}s;
+                `;
+                container.appendChild(particle);
+            }
+        }
+
+        // === THEME SYSTEM ===
+        function toggleTheme() {
+            currentTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            localStorage.setItem('theme', currentTheme);
+            applyTheme(currentTheme);
+        }
+
+        function applyTheme(theme) {
+            document.body.setAttribute('data-theme', theme);
+            document.getElementById('theme-icon-dark').classList.toggle('hidden', theme === 'light');
+            document.getElementById('theme-icon-light').classList.toggle('hidden', theme === 'dark');
+        }
+
+        // === SOUND SYSTEM ===
+        function toggleSound() {
+            soundEnabled = !soundEnabled;
+            localStorage.setItem('soundEnabled', soundEnabled);
+            updateSoundUI();
+        }
+
+        function updateSoundUI() {
+            document.getElementById('sound-text').textContent = `SOUND: ${soundEnabled ? 'ON' : 'OFF'}`;
+        }
+
+        function playSound(type) {
+            if (!soundEnabled) return;
+            // Using Web Audio API for simple beep sounds
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.frequency.value = type === 'send' ? 800 : 600;
+            oscillator.type = 'sine';
+            gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 0.1);
+            
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + 0.1);
+        }
+
+        // === CONNECTION STATUS ===
+        function checkConnection() {
+            fetch('/api/stats')
+                .then(res => {
+                    if (res.ok) {
+                        statusDot.className = 'status-dot bg-cyber-green';
+                        statusText.textContent = 'AI CONNECTED';
+                        statusText.className = 'text-xs font-mono text-cyber-green';
+                    }
+                })
+                .catch(() => {
+                    statusDot.className = 'status-dot bg-cyber-alert';
+                    statusText.textContent = 'OFFLINE';
+                    statusText.className = 'text-xs font-mono text-cyber-alert';
+                });
+        }
+
+        // === MODE SYSTEM ===
+        const modeStyles = {
+            'logical': 'bg-cyan-500 text-black shadow-[0_0_15px_rgba(6,182,212,0.5)] border-cyan-400 font-bold',
+            'aggressive': 'bg-purple-600 text-white shadow-[0_0_15px_rgba(147,51,234,0.5)] border-purple-500 font-bold',
+            'devil': 'bg-pink-600 text-white shadow-[0_0_15px_rgba(219,39,119,0.5)] border-pink-500 font-bold'
+        };
+
+        const defaultBtnClass = 'mode-btn bg-transparent border border-gray-700 text-gray-500 hover:text-white text-xs py-2 px-3 rounded transition-all font-mono cursor-pointer';
+
+        window.setMode = (mode) => {
+            localStorage.setItem('debateMode', mode);
+            updateModeUI(mode);
+        };
+
+        function updateModeUI(activeMode) {
+            document.querySelectorAll('.mode-btn').forEach(btn => {
+                btn.className = defaultBtnClass;
+                if(btn.id === 'btn-devil') btn.classList.add('col-span-2');
+            });
+
+            const activeBtn = document.getElementById(`btn-${activeMode}`);
+            if(activeBtn) {
+                activeBtn.className = `mode-btn text-xs py-2 px-3 rounded transition-all font-mono cursor-pointer ${modeStyles[activeMode]}`;
+                if(activeMode === 'devil') activeBtn.classList.add('col-span-2');
+            }
+        }
+
+        // === COUNTER SYSTEM ===
+        function loadLocalStats() {
+            const savedCount = localStorage.getItem('debateCount') || '0';
+            debateCountEl.innerText = savedCount.toString().padStart(2, '0');
+        }
+
+        function incrementLocalCounter() {
+            let currentCount = parseInt(localStorage.getItem('debateCount') || '0');
+            let newCount = currentCount + 1;
+            localStorage.setItem('debateCount', newCount);
+            debateCountEl.innerText = newCount.toString().padStart(2, '0');
+            
+            // Flash animation
+            debateCountEl.style.color = "#00F0FF";
+            debateCountEl.style.transform = "scale(1.1)";
+            setTimeout(() => {
+                debateCountEl.style.color = "white";
+                debateCountEl.style.transform = "scale(1)";
+            }, 300);
+        }
+
+        // === CHAT LOGIC ===
+        chatForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const message = userInput.value.trim();
+            if (!message) return;
+
+            // Hide Welcome
+            const welcome = document.getElementById('welcome-screen');
+            if(welcome) welcome.style.display = 'none';
+
+            addMessage(message, 'user');
+            playSound('send');
+            userInput.value = '';
+            incrementLocalCounter();
+
+            const loadingId = addLoading();
+
+            try {
+                const currentMode = localStorage.getItem('debateMode') || 'logical';
+                
+                // Send request WITH conversation history for context
+                const res = await fetch('/chat', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ 
+                        message, 
+                        mode: currentMode,
+                        history: conversationHistory  // Send history for multi-turn context
+                    })
+                });
+
+                if (!res.ok) throw new Error(`Server status: ${res.status}`);
+
+                const data = await res.json();
+                removeLoading(loadingId);
+
+                if (data.error) {
+                    addMessage("⚠️ API ERROR: " + data.error, 'ai');
+                } else if (data.response) {
+                    addMessageWithTyping(data.response, 'ai');
+                    playSound('receive');
+                    
+                    // Store this exchange in history
+                    conversationHistory.push({
+                        user: message,
+                        ai: data.response
+                    });
+                    
+                    // Enable score button after 2+ exchanges
+                    if (conversationHistory.length >= 2) {
+                        document.getElementById('score-btn').classList.add('animate-pulse');
+                    }
+                } else {
+                    addMessage("⚠️ NO RESPONSE RECEIVED", 'ai');
+                }
+
+            } catch (err) {
+                removeLoading(loadingId);
+                console.error(err);
+                addMessage("⚠️ CONNECTION ERROR: AI is offline. Please check your API key.", 'ai');
+            }
+        });
+
+        // === GET SCORE ===
+        async function getScore() {
+            if (conversationHistory.length < 2) {
+                alert('Have at least 2 debate exchanges before scoring!');
+                return;
+            }
+
+            const scoreBtn = document.getElementById('score-btn');
+            scoreBtn.disabled = true;
+            scoreBtn.textContent = '⏳ SCORING...';
+
+            try {
+                const res = await fetch('/score', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ history: conversationHistory })
+                });
+
+                const data = await res.json();
+
+                if (data.score) {
+                    // Update score panel
+                    document.getElementById('score-panel').classList.remove('hidden');
+                    document.getElementById('total-score').textContent = data.score.total;
+                    document.getElementById('score-logic').textContent = data.score.logic + '/25';
+                    document.getElementById('score-evidence').textContent = data.score.evidence + '/25';
+                    document.getElementById('score-persuasion').textContent = data.score.persuasion + '/25';
+                    document.getElementById('score-rebuttal').textContent = data.score.rebuttal + '/25';
+                    document.getElementById('score-feedback').textContent = data.score.feedback;
+
+                    // Animate score
+                    document.getElementById('total-score').classList.add('animate-pulse');
+                    setTimeout(() => {
+                        document.getElementById('total-score').classList.remove('animate-pulse');
+                    }, 2000);
+                } else {
+                    alert('Failed to get score: ' + (data.error || 'Unknown error'));
+                }
+            } catch (err) {
+                console.error(err);
+                alert('Failed to get score. Check your connection.');
+            } finally {
+                scoreBtn.disabled = false;
+                scoreBtn.innerHTML = `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg> 🏆 GET SCORE`;
+            }
+        }
+
+        // === TYPING ANIMATION ===
+        function addMessageWithTyping(text, sender) {
+            const div = document.createElement('div');
+            div.className = "flex gap-4 max-w-4xl mx-auto";
+            
+            const isError = text.startsWith("⚠️");
+            const borderColor = isError ? 'border-red-500' : 'border-cyber-purple';
+            const textColor = isError ? 'text-red-400' : 'text-gray-300';
+            
+            div.innerHTML = `
+                <div class="w-8 h-8 bg-cyber-purple/20 border border-cyber-purple rounded flex items-center justify-center text-[10px] text-cyber-purple font-mono flex-shrink-0">AI</div>
+                <div class="bg-cyber-purple/5 border-l-2 ${borderColor} ${textColor} p-4 font-sans text-md shadow-[0_0_15px_rgba(189,0,255,0.1)]">
+                    <p id="typing-text"></p><span class="typing-cursor"></span>
+                </div>`;
+            
+            chatContainer.appendChild(div);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+            
+            // Typing effect
+            const typingEl = div.querySelector('#typing-text');
+            const cursor = div.querySelector('.typing-cursor');
+            let i = 0;
+            
+            function typeChar() {
+                if (i < text.length) {
+                    typingEl.textContent += text.charAt(i);
+                    i++;
+                    chatContainer.scrollTop = chatContainer.scrollHeight;
+                    setTimeout(typeChar, 15);
+                } else {
+                    cursor.remove();
+                }
+            }
+            typeChar();
+        }
+
+        // === SIDEBAR TOGGLE ===
+        function toggleSidebar() {
+            document.getElementById('sidebar').classList.toggle('open');
+            document.getElementById('sidebar-overlay').classList.toggle('active');
+        }
+
+        // === CLEAR CHAT ===
+        function clearChat() {
+            if (confirm('Clear all chat messages and start fresh?')) {
+                // Reset conversation history
+                conversationHistory = [];
+                
+                // Hide score panel
+                document.getElementById('score-panel').classList.add('hidden');
+                document.getElementById('score-btn').classList.remove('animate-pulse');
+                
+                // Reset chat UI
+                chatContainer.innerHTML = `
+                    <div class="flex flex-col items-center justify-center h-full opacity-60 pointer-events-none" id="welcome-screen">
+                        <div class="text-6xl mb-4 animate-float">⚖️</div>
+                        <h1 class="mt-6 text-2xl font-bold tracking-widest text-white">SYSTEM READY</h1>
+                        <p class="text-cyber-neon/70 font-mono text-sm mt-2">INITIALIZE PROTOCOL TO BEGIN</p>
+                        <p class="text-gray-600 font-mono text-xs mt-4">Select a topic below or type your argument</p>
+                    </div>`;
+            }
+        }
+
+        // === KEYBOARD SHORTCUTS ===
+        document.addEventListener('keydown', (e) => {
+            // Ctrl+K: Clear chat
+            if (e.ctrlKey && e.key === 'k') {
+                e.preventDefault();
+                clearChat();
+            }
+            // Ctrl+M: Toggle mic
+            if (e.ctrlKey && e.key === 'm') {
+                e.preventDefault();
+                micBtn.click();
+            }
+            // Ctrl+/: Toggle theme
+            if (e.ctrlKey && e.key === '/') {
+                e.preventDefault();
+                toggleTheme();
+            }
+        });
+
+        // === SPEECH RECOGNITION ===
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (SpeechRecognition) {
+            const recognition = new SpeechRecognition();
+            recognition.lang = 'en-US';
+            micBtn.addEventListener('click', () => recognition.start());
+            
+            recognition.onstart = () => { 
+                micStatus.style.opacity = '1'; 
+                userInput.placeholder = "LISTENING..."; 
+                micBtn.classList.add('text-cyber-alert', 'animate-pulse'); 
+            };
+            
+            recognition.onend = () => { 
+                micStatus.style.opacity = '0'; 
+                userInput.placeholder = "TRANSMIT_ARGUMENT..."; 
+                micBtn.classList.remove('text-cyber-alert', 'animate-pulse'); 
+            };
+            
+            recognition.onresult = (event) => {
+                userInput.value = event.results[0][0].transcript;
+                setTimeout(() => chatForm.dispatchEvent(new Event('submit')), 800);
+            };
+        }
+
+        // === UI HELPERS ===
+        
+        // XSS Protection: Escape HTML entities
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+        
+        function addMessage(text, sender) {
+            const div = document.createElement('div');
+            div.className = "flex gap-4 max-w-4xl mx-auto";
+            
+            // Escape text to prevent XSS
+            const safeText = escapeHtml(text);
+            
+            if (sender === 'user') {
+                div.classList.add('flex-row-reverse');
+                div.innerHTML = `
+                    <div class="w-8 h-8 bg-cyber-neon/20 border border-cyber-neon rounded flex items-center justify-center text-[10px] text-cyber-neon font-mono flex-shrink-0">YOU</div>
+                    <div class="bg-cyber-neon/10 border border-cyber-neon/30 text-white p-4 rounded-tl-xl rounded-br-xl font-mono text-sm relative">
+                        <div class="absolute top-0 right-0 w-2 h-2 bg-cyber-neon"></div>
+                        <p>${safeText}</p>
+                    </div>`;
+            } else {
+                const isError = text.startsWith("⚠️");
+                const borderColor = isError ? 'border-red-500' : 'border-cyber-purple';
+                const textColor = isError ? 'text-red-400' : 'text-gray-300';
+                
+                div.innerHTML = `
+                    <div class="w-8 h-8 bg-cyber-purple/20 border border-cyber-purple rounded flex items-center justify-center text-[10px] text-cyber-purple font-mono flex-shrink-0">AI</div>
+                    <div class="bg-cyber-purple/5 border-l-2 ${borderColor} ${textColor} p-4 font-sans text-md shadow-[0_0_15px_rgba(189,0,255,0.1)]">
+                        <p>${safeText}</p>
+                    </div>`;
+            }
+            chatContainer.appendChild(div);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        function addLoading() {
+            const id = 'loading-' + Date.now();
+            const div = document.createElement('div');
+            div.id = id;
+            div.className = "flex gap-4 max-w-4xl mx-auto";
+            div.innerHTML = `
+                <div class="w-8 h-8 flex items-center justify-center">
+                    <div class="w-4 h-4 border-2 border-cyber-purple border-t-transparent rounded-full animate-spin"></div>
+                </div>
+                <div class="text-cyber-purple text-xs font-mono flex items-center tracking-widest animate-pulse">
+                    COMPUTING...
+                </div>`;
+            chatContainer.appendChild(div);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+            return id;
+        }
+        
+        function removeLoading(id) { 
+            const el = document.getElementById(id); 
+            if(el) el.remove(); 
+        }
+        
+        window.setInput = (t) => { 
+            userInput.value = t; 
+            userInput.focus(); 
+        };
+    </script>
+</body>
+</html>
